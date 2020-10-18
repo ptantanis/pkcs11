@@ -77,3 +77,27 @@ func (pub PublicKey) Encrypt(mechanism pkcs11.Mechanism, plaintext []byte) ([]by
 	}
 	return out, nil
 }
+
+func (pub PublicKey) WrapKey(mechanism pkcs11.Mechanism, object Object) ([]byte, error) {
+	s := pub.session
+	s.Lock()
+	defer s.Unlock()
+
+	return s.ctx.WrapKey(s.handle, []*pkcs11.Mechanism{&mechanism}, pub.objectHandle, object.objectHandle)
+}
+
+func (priv PrivateKey) Unwrap(mechanism pkcs11.Mechanism, wrappedKey []byte, attribute []*pkcs11.Attribute) (*Object,
+	error) {
+	s := priv.session
+	s.Lock()
+	defer s.Unlock()
+
+	key, err := s.ctx.UnwrapKey(s.handle, []*pkcs11.Mechanism{&mechanism}, priv.objectHandle, wrappedKey, attribute)
+	if err != nil {
+		return nil, err
+	}
+	return &Object{
+		session:      s,
+		objectHandle: key,
+	}, nil
+}
